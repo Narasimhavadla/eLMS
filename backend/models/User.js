@@ -17,10 +17,10 @@ class User {
         return rows[0];
     }
 
-    static async create(username, email, hashedPassword, role_id) {
+    static async create(username, email, hashedPassword, role_id, mentor_id = null) {
         return db.execute(
-            'INSERT INTO users (username, email, password, role_id) VALUES (?, ?, ?, ?)',
-            [username, email, hashedPassword, role_id]
+            'INSERT INTO users (username, email, password, role_id, mentor_id) VALUES (?, ?, ?, ?, ?)',
+            [username, email, hashedPassword, role_id, mentor_id]
         );
     }
 
@@ -32,6 +32,21 @@ class User {
     static async findRoleIdByName(name) {
         const [rows] = await db.execute('SELECT id FROM roles WHERE name = ?', [name]);
         return rows[0]?.id;
+    }
+
+    static async getMentors() {
+        const [rows] = await db.execute(
+            `SELECT u.id, u.username, u.email FROM users u JOIN roles r ON u.role_id = r.id WHERE r.name = 'mentor' AND u.status = 'active'`
+        );
+        return rows;
+    }
+
+    static async getModulesByMentor(mentorId) {
+        const [rows] = await db.execute(
+            'SELECT id FROM modules WHERE mentor_id = ? AND status = "active"',
+            [mentorId]
+        );
+        return rows;
     }
 
     static async getAll() {

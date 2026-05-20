@@ -11,6 +11,22 @@ const analyticsRoutes = require('./routes/analytics');
 
 const app = express();
 
+// Auto-migrate: add mentor_id column to users table if it doesn't exist
+(async () => {
+    try {
+        const [columns] = await db.execute(
+            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'mentor_id'`,
+            [process.env.DB_NAME]
+        );
+        if (columns.length === 0) {
+            await db.execute(`ALTER TABLE users ADD COLUMN mentor_id INT NULL, ADD CONSTRAINT fk_users_mentor FOREIGN KEY (mentor_id) REFERENCES users(id)`);
+            console.log('Migration: Added mentor_id column to users table');
+        }
+    } catch (err) {
+        console.error('Migration error:', err.message);
+    }
+})();
+
 // Middleware
 app.use(cors({
     origin: 'http://localhost:5173', // Be explicit for security, though * works

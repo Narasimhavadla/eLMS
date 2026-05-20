@@ -1,27 +1,58 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../api';
 import { useNavigate, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faEnvelope, faLock, faUserTag, faGraduationCap } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faEnvelope, faLock, faUserTag, faGraduationCap, faChalkboardTeacher, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 const Register = () => {
     const [formData, setFormData] = useState({
         username: '',
         email: '',
         password: '',
-        role_name: 'student'
+        role_name: 'student',
+        mentor_id: ''
     });
+    const [mentors, setMentors] = useState([]);
+    const [mentorsLoading, setMentorsLoading] = useState(true);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
+    useEffect(() => {
+        fetchMentors();
+    }, []);
+
+    const fetchMentors = async () => {
+        try {
+            const res = await api.get('/auth/mentors');
+            setMentors(res.data);
+        } catch (err) {
+            console.error('Error fetching mentors:', err);
+        } finally {
+            setMentorsLoading(false);
+        }
+    };
+
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        if (name === 'role_name' && value !== 'student') {
+            // Clear mentor_id when switching away from student role
+            setFormData({ ...formData, [name]: value, mentor_id: '' });
+        } else {
+            setFormData({ ...formData, [name]: value });
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        // Validate mentor selection for students
+        if (formData.role_name === 'student' && !formData.mentor_id) {
+            setError('Please select a mentor');
+            return;
+        }
+
         setLoading(true);
         try {
             await api.post('/auth/register', formData);
@@ -32,6 +63,8 @@ const Register = () => {
             setLoading(false);
         }
     };
+
+    const isStudent = formData.role_name === 'student';
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 to-white p-4">
@@ -123,6 +156,42 @@ const Register = () => {
                         </div>
                     </div>
 
+                    {/* Mentor Selection - only visible for students */}
+                    {isStudent && (
+                        <div style={{ animation: 'slideDown 0.3s ease-out' }}>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Select Mentor</label>
+                            <div className="relative">
+                                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                    <FontAwesomeIcon icon={faChalkboardTeacher} />
+                                </span>
+                                {mentorsLoading ? (
+                                    <div className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-400 text-sm">
+                                        <FontAwesomeIcon icon={faSpinner} spin className="mr-2" />
+                                        Loading mentors...
+                                    </div>
+                                ) : (
+                                    <select
+                                        name="mentor_id"
+                                        value={formData.mentor_id}
+                                        onChange={handleChange}
+                                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all appearance-none"
+                                        required
+                                    >
+                                        <option value="">-- Choose a Mentor --</option>
+                                        {mentors.map(mentor => (
+                                            <option key={mentor.id} value={mentor.id}>
+                                                {mentor.username} ({mentor.email})
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
+                            {mentors.length === 0 && !mentorsLoading && (
+                                <p className="text-xs text-amber-600 mt-1">No mentors available yet. Please contact admin.</p>
+                            )}
+                        </div>
+                    )}
+
                     <button
                         type="submit"
                         disabled={loading}
@@ -139,6 +208,21 @@ const Register = () => {
                     </Link>
                 </p>
             </div>
+
+            <style>{`
+                @keyframes slideDown {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-10px);
+                        max-height: 0;
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                        max-height: 200px;
+                    }
+                }
+            `}</style>
         </div>
     );
 };
