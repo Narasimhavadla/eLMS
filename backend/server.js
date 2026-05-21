@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const db = require('./config/db');
+
+const { sequelize } = require('./models');
 
 const authRoutes = require('./routes/auth');
 const moduleRoutes = require('./routes/modules');
@@ -10,22 +11,6 @@ const userRoutes = require('./routes/users');
 const analyticsRoutes = require('./routes/analytics');
 
 const app = express();
-
-// Auto-migrate: add mentor_id column to users table if it doesn't exist
-(async () => {
-    try {
-        const [columns] = await db.execute(
-            `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'mentor_id'`,
-            [process.env.DB_NAME]
-        );
-        if (columns.length === 0) {
-            await db.execute(`ALTER TABLE users ADD COLUMN mentor_id INT NULL, ADD CONSTRAINT fk_users_mentor FOREIGN KEY (mentor_id) REFERENCES users(id)`);
-            console.log('Migration: Added mentor_id column to users table');
-        }
-    } catch (err) {
-        console.error('Migration error:', err.message);
-    }
-})();
 
 // Middleware
 app.use(cors({
@@ -48,6 +33,13 @@ app.get('/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+
+// Sync all Sequelize models with alter: true for auto DB adjustment
+sequelize.sync({ alter: true }).then(() => {
+    console.log('Database synced successfully (alter: true)');
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}).catch(err => {
+    console.error('Database sync failed:', err.message);
 });

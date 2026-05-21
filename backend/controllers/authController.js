@@ -1,15 +1,14 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const Module = require('../models/Module');
+const { User, Role, Module, StudentModule } = require('../models');
 
 exports.register = async (req, res) => {
     const { username, email, password, role_name, mentor_id } = req.body;
     try {
         console.log('Registering user:', { username, email, role_name, mentor_id });
         
-        const role_id = await User.findRoleIdByName(role_name || 'student');
-        if (!role_id) {
+        const role = await Role.findOne({ where: { name: role_name || 'student' } });
+        if (!role) {
             console.error('Role not found:', role_name);
             return res.status(400).json({ message: 'Invalid role' });
         }
@@ -18,16 +17,25 @@ exports.register = async (req, res) => {
         const assignedMentorId = (role_name === 'student' && mentor_id) ? mentor_id : null;
         
         const hashedPassword = await bcrypt.hash(password, 10);
-        const [result] = await User.create(username, email, hashedPassword, role_id, assignedMentorId);
+        const newUser = await User.create({
+            username,
+            email,
+            password: hashedPassword,
+            role_id: role.id,
+            mentor_id: assignedMentorId
+        });
         
         // Auto-assign mentor's modules to the student
         if (role_name === 'student' && assignedMentorId) {
-            const studentId = result.insertId;
-            const mentorModules = await User.getModulesByMentor(assignedMentorId);
+            const mentorModules = await Module.findAll({
+                where: { mentor_id: assignedMentorId, status: 'active' }
+            });
             for (const mod of mentorModules) {
-                await Module.assignToStudent(studentId, mod.id);
+                await StudentModule.findOrCreate({
+                    where: { student_id: newUser.id, module_id: mod.id }
+                });
             }
-            console.log(`Auto-assigned ${mentorModules.length} modules from mentor ${assignedMentorId} to student ${studentId}`);
+            console.log(`Auto-assigned ${mentorModules.length} modules from mentor ${assignedMentorId} to student ${newUser.id}`);
         }
         
         res.status(201).json({ message: 'User registered successfully' });
@@ -39,7 +47,11 @@ exports.register = async (req, res) => {
 
 exports.getMentors = async (req, res) => {
     try {
-        const mentors = await User.getMentors();
+        const mentorRole = await Role.findOne({ where: { name: 'mentor' } });
+        const mentors = await User.findAll({
+            where: { role_id: mentorRole.id, status: 'active' },
+            attributes: ['id', 'username', 'email']
+        });
         res.json(mentors);
     } catch (err) {
         console.error('Error fetching mentors:', err);
@@ -50,7 +62,10 @@ exports.getMentors = async (req, res) => {
 exports.login = async (req, res) => {
     const { email, password } = req.body;
     try {
-        const user = await User.findByEmail(email);
+        const user = await User.findOne({
+            where: { email },
+            include: [{ model: Role, as: 'role', attributes: ['name'] }]
+        });
         if (!user) return res.status(400).json({ message: 'User not found' });
         
         if (user.status === 'inactive') return res.status(403).json({ message: 'Account is deactivated' });
@@ -58,15 +73,16 @@ exports.login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
         
+        const roleName = user.role.name;
         const token = jwt.sign(
-            { id: user.id, role: user.role },
+            { id: user.id, role: roleName },
             process.env.JWT_SECRET,
             { expiresIn: '1d' }
         );
         
         res.json({
             token,
-            user: { id: user.id, username: user.username, email: user.email, role: user.role }
+            user: { id: user.id, username: user.username, email: user.email, role: roleName }
         });
     } catch (err) {
         console.error('Login error:', err);

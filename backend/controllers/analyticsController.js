@@ -1,80 +1,118 @@
-const db = require('../config/db');
+const { User, Role, Module, Lesson, StudentModule, StudentProgress, sequelize } = require('../models');
+const { fn, col, literal } = require('sequelize');
 
 exports.getPlatformAnalytics = async (req, res) => {
     try {
         // 1. Fetch total counts
-        const [studentCount] = await db.execute(
-            `SELECT COUNT(*) as count FROM users u JOIN roles r ON u.role_id = r.id WHERE r.name = 'student'`
-        );
-        const [mentorCount] = await db.execute(
-            `SELECT COUNT(*) as count FROM users u JOIN roles r ON u.role_id = r.id WHERE r.name = 'mentor'`
-        );  
-        const [moduleCount] = await db.execute(
-            `SELECT COUNT(*) as count FROM modules`
-        );
-        const [lessonCount] = await db.execute(
-            `SELECT COUNT(*) as count FROM lessons`
-        );
-        const [completionCount] = await db.execute(
-            `SELECT COUNT(*) as count FROM student_progress`
-        );
+        const studentRole = await Role.findOne({ where: { name: 'student' } });
+        const mentorRole = await Role.findOne({ where: { name: 'mentor' } });
+
+        const studentCount = await User.count({ where: { role_id: studentRole.id } });
+        const mentorCount = await User.count({ where: { role_id: mentorRole.id } });
+        const moduleCount = await Module.count();
+        const lessonCount = await Lesson.count();
+        const completionCount = await StudentProgress.count();
 
         // 2. Fetch enrollment overview (students per module)
-        const [enrollments] = await db.execute(`
-            SELECT m.id, m.title, COUNT(sm.student_id) as enrolled_students 
-            FROM modules m 
-            LEFT JOIN student_modules sm ON m.id = sm.module_id 
-            GROUP BY m.id, m.title
-            ORDER BY enrolled_students DESC
-        `);
+        const enrollments = await Module.findAll({
+            attributes: [
+                'id',
+                'title',
+                [fn('COUNT', col('moduleStudents.id')), 'enrolled_students']
+            ],
+            include: [{
+                model: StudentModule,
+                as: 'moduleStudents',
+                attributes: []
+            }],
+            group: ['Module.id', 'Module.title'],
+            order: [[literal('enrolled_students'), 'DESC']],
+            raw: true
+        });
 
         // 3. Fetch recent student sign-ups (last 5)
-        const [recentSignups] = await db.execute(`
-            SELECT u.id, u.username, u.email, u.created_at 
-            FROM users u
-            JOIN roles r ON u.role_id = r.id
-            WHERE r.name = 'student'
-            ORDER BY u.created_at DESC
-            LIMIT 5
-        `);
+        const recentSignups = await User.findAll({
+            where: { role_id: studentRole.id },
+            attributes: ['id', 'username', 'email', 'created_at'],
+            order: [['created_at', 'DESC']],
+            limit: 5,
+            raw: true
+        });
 
         // 4. Fetch recent lesson completions (last 5)
-        const [recentCompletions] = await db.execute(`
-            SELECT u.username, l.title as lesson_title, m.title as module_title, sp.completed_at
-            FROM student_progress sp
-            JOIN users u ON sp.student_id = u.id
-            JOIN lessons l ON sp.lesson_id = l.id
-            JOIN modules m ON l.module_id = m.id
-            ORDER BY sp.completed_at DESC
-            LIMIT 5
-        `);
+        const recentCompletions = await StudentProgress.findAll({
+            include: [
+                {
+                    model: User,
+                    as: 'student',
+                    attributes: ['username']
+                },
+                {
+                    model: Lesson,
+                    as: 'lesson',
+                    attributes: ['title'],
+                    include: [{
+                        model: Module,
+                        as: 'module',
+                        attributes: ['title']
+                    }]
+                }
+            ],
+            order: [['completed_at', 'DESC']],
+            limit: 5
+        });
 
-        // 5. Fetch course completions and metrics (percentage completed lessons per module)
-        const [courseMetrics] = await db.execute(`
-            SELECT 
-                m.id,
-                m.title,
-                COUNT(DISTINCT sm.student_id) as enrolled_students,
-                (SELECT COUNT(*) FROM lessons l WHERE l.module_id = m.id) as total_lessons,
-                COUNT(sp.id) as completed_lessons
-            FROM modules m
-            LEFT JOIN student_modules sm ON m.id = sm.module_id
-            LEFT JOIN lessons l ON l.module_id = m.id
-            LEFT JOIN student_progress sp ON sp.lesson_id = l.id AND sp.student_id = sm.student_id
-            GROUP BY m.id, m.title
-        `);
+        const formattedRecentCompletions = recentCompletions.map(rc => ({
+            username: rc.student.username,
+            lesson_title: rc.lesson.title,
+            module_title: rc.lesson.module ? rc.lesson.module.title : null,
+            completed_at: rc.completed_at
+        }));
+
+        // 5. Fetch course metrics
+        const allModules = await Module.findAll({ raw: true });
+        const courseMetrics = [];
+
+        for (const mod of allModules) {
+            const totalLessons = await Lesson.count({ where: { module_id: mod.id } });
+            const enrolledStudents = await StudentModule.count({ where: { module_id: mod.id } });
+
+            let completedLessons = 0;
+            if (totalLessons > 0) {
+                const lessonIds = (await Lesson.findAll({
+                    where: { module_id: mod.id },
+                    attributes: ['id'],
+                    raw: true
+                })).map(l => l.id);
+
+                if (lessonIds.length > 0) {
+                    const { Op } = require('sequelize');
+                    completedLessons = await StudentProgress.count({
+                        where: { lesson_id: { [Op.in]: lessonIds } }
+                    });
+                }
+            }
+
+            courseMetrics.push({
+                id: mod.id,
+                title: mod.title,
+                enrolled_students: enrolledStudents,
+                total_lessons: totalLessons,
+                completed_lessons: completedLessons
+            });
+        }
 
         res.json({
             summary: {
-                students: studentCount[0].count,
-                mentors: mentorCount[0].count,
-                modules: moduleCount[0].count,
-                lessons: lessonCount[0].count,
-                completions: completionCount[0].count
+                students: studentCount,
+                mentors: mentorCount,
+                modules: moduleCount,
+                lessons: lessonCount,
+                completions: completionCount
             },
             enrollments,
             recentSignups,
-            recentCompletions,
+            recentCompletions: formattedRecentCompletions,
             courseMetrics
         });
     } catch (err) {

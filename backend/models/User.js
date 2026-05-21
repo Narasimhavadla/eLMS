@@ -1,72 +1,45 @@
-const db = require('../config/db');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/db');
 
-class User {
-    static async findByEmail(email) {
-        const [rows] = await db.execute(
-            'SELECT u.*, r.name as role FROM users u JOIN roles r ON u.role_id = r.id WHERE u.email = ?',
-            [email]
-        );
-        return rows[0];
+const User = sequelize.define('User', {
+    id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true
+    },
+    username: {
+        type: DataTypes.STRING(50),
+        allowNull: false,
+        unique: true
+    },
+    email: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        unique: true
+    },
+    password: {
+        type: DataTypes.STRING(255),
+        allowNull: false
+    },
+    role_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    mentor_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    status: {
+        type: DataTypes.ENUM('active', 'inactive'),
+        defaultValue: 'active'
+    },
+    created_at: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW
     }
-
-    static async findById(id) {
-        const [rows] = await db.execute(
-            'SELECT u.*, r.name as role FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = ?',
-            [id]
-        );
-        return rows[0];
-    }
-
-    static async create(username, email, hashedPassword, role_id, mentor_id = null) {
-        return db.execute(
-            'INSERT INTO users (username, email, password, role_id, mentor_id) VALUES (?, ?, ?, ?, ?)',
-            [username, email, hashedPassword, role_id, mentor_id]
-        );
-    }
-
-    static async getRoles() {
-        const [rows] = await db.execute('SELECT * FROM roles');
-        return rows;
-    }
-
-    static async findRoleIdByName(name) {
-        const [rows] = await db.execute('SELECT id FROM roles WHERE name = ?', [name]);
-        return rows[0]?.id;
-    }
-
-    static async getMentors() {
-        const [rows] = await db.execute(
-            `SELECT u.id, u.username, u.email FROM users u JOIN roles r ON u.role_id = r.id WHERE r.name = 'mentor' AND u.status = 'active'`
-        );
-        return rows;
-    }
-
-    static async getModulesByMentor(mentorId) {
-        const [rows] = await db.execute(
-            'SELECT id FROM modules WHERE mentor_id = ? AND status = "active"',
-            [mentorId]
-        );
-        return rows;
-    }
-
-    static async getAll() {
-        const [rows] = await db.execute(
-            'SELECT u.id, u.username, u.email, u.status, r.name as role FROM users u JOIN roles r ON u.role_id = r.id'
-        );
-        return rows;
-    }
-
-    static async updateStatus(id, status) {
-        return db.execute('UPDATE users SET status = ? WHERE id = ?', [status, id]);
-    }
-
-    static async updateProfile(id, username, email) {
-        return db.execute('UPDATE users SET username = ?, email = ? WHERE id = ?', [username, email, id]);
-    }
-
-    static async updatePassword(id, hashedPassword) {
-        return db.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, id]);
-    }
-}
+}, {
+    tableName: 'users',
+    timestamps: false
+});
 
 module.exports = User;
