@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import ModuleView from './pages/ModuleView';
 
@@ -12,7 +13,7 @@ import AdminModules from './pages/AdminModules';
 import MentorModules from './pages/MentorModules';
 import MentorStudents from './pages/MentorStudents';
 import StudentLearning from './pages/StudentLearning';
-import Analytics from './pages/Analytics';
+// import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Dashboard />} />

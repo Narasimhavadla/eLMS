@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faEdit, faTrash, faUsers, faBook, faSpinner, faChartLine, faUserPlus, faTimes, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faEdit, faTrash, faUsers, faBook, faSpinner, faChartLine, faUserPlus, faTimes, faSearch, faGraduationCap } from '@fortawesome/free-solid-svg-icons';
 
 const MentorDashboard = () => {
     const [modules, setModules] = useState([]);
@@ -84,7 +84,39 @@ const MentorDashboard = () => {
     );
 
     return (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-8 animate-fade-in pb-8">
+            {/* Welcome Header Section */}
+            <div className="bg-white rounded-2xl p-8 md:p-10 border border-slate-200 shadow-sm relative overflow-hidden flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                <div className="absolute -right-10 -top-10 opacity-5 pointer-events-none">
+                    <FontAwesomeIcon icon={faGraduationCap} className="text-[15rem] text-primary" />
+                </div>
+                
+                <div className="relative z-10 flex items-center gap-6">
+                    <div className="w-16 h-16 bg-primary text-white rounded-2xl flex items-center justify-center shadow-lg shrink-0">
+                        <FontAwesomeIcon icon={faGraduationCap} className="text-3xl" />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-2 tracking-tight">
+                            Welcome to eLMS, Instructor!
+                        </h1>
+                        <p className="text-slate-500 text-lg">
+                            Manage your modules, track student progress, and guide your learners through their journey.
+                        </p>
+                    </div>
+                </div>
+                
+                <div className="relative z-10 flex flex-wrap gap-4">
+                    <div className="bg-slate-50 rounded-xl px-6 py-4 border border-slate-200 text-center min-w-[120px]">
+                        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Modules</p>
+                        <p className="text-3xl font-bold text-primary">{modules.length}</p>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl px-6 py-4 border border-slate-200 text-center min-w-[120px]">
+                        <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Students</p>
+                        <p className="text-3xl font-bold text-emerald-600">{students.length}</p>
+                    </div>
+                </div>
+            </div>
+
             {/* Header Command Bar */}
             <div className="border-b border-slate-200 pb-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>

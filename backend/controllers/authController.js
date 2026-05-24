@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { User, Role, Module, StudentModule } = require('../models');
 
 exports.register = async (req, res) => {
@@ -87,5 +88,83 @@ exports.login = async (req, res) => {
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ message: 'Error logging in', error: err.message });
+    }
+};
+
+exports.forgotPassword = async (req, res) => {
+    const { email } = req.body;
+    try {
+        const user = await User.findOne({ where: { email } });
+        if (!user) {
+            return res.status(400).json({ message: 'No user found with that email address' });
+        }
+
+        // Generate 6-digit code
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const hashedCode = crypto.createHash('sha256').update(resetCode).digest('hex');
+        
+        // Set code expiry (15 minutes from now)
+        const resetCodeExpiry = new Date(Date.now() + 15 * 60 * 1000);
+        
+        // Update user with reset code
+        await user.update({
+            reset_token: hashedCode,
+            reset_token_expiry: resetCodeExpiry
+        });
+
+        console.log(`Password reset code for ${email}: ${resetCode}`);
+
+        res.json({
+            message: 'Password reset code has been generated',
+            resetCode: resetCode // Display code to user
+        });
+    } catch (err) {
+        console.error('Forgot password error:', err);
+        res.status(500).json({ message: 'Error processing forgot password request', error: err.message });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    const { code, newPassword, confirmPassword } = req.body;
+    try {
+        if (!code) {
+            return res.status(400).json({ message: 'Reset code is required' });
+        }
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ message: 'Passwords do not match' });
+        }
+
+        // Hash the code to find the user
+        const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
+        
+        // Find user with valid reset code
+        const user = await User.findOne({
+            where: {
+                reset_token: hashedCode,
+                reset_token_expiry: {
+                    [require('sequelize').Op.gt]: new Date()
+                }
+            }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid or expired reset code' });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        
+        // Update user password and clear reset code
+        await user.update({
+            password: hashedPassword,
+            reset_token: null,
+            reset_token_expiry: null
+        });
+
+        res.json({ message: 'Password has been reset successfully' });
+    } catch (err) {
+        console.error('Reset password error:', err);
+        res.status(500).json({ message: 'Error resetting password', error: err.message });
     }
 };

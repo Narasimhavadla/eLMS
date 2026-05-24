@@ -3,11 +3,13 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope, faLock, faGraduationCap } from '@fortawesome/free-solid-svg-icons';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [showForgotModal, setShowForgotModal] = useState(false);
     const { login, loading } = useAuth();
     const navigate = useNavigate();
 
@@ -58,7 +60,16 @@ const Login = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="block text-sm font-medium text-gray-700">Password</label>
+                            <button
+                                type="button"
+                                onClick={() => setShowForgotModal(true)}
+                                className="text-primary hover:underline text-xs font-semibold transition-all"
+                            >
+                                Forgot?
+                            </button>
+                        </div>
                         <div className="relative">
                             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
                                 <FontAwesomeIcon icon={faLock} />
@@ -89,6 +100,11 @@ const Login = () => {
                         Register here
                     </Link>
                 </p>
+
+                <ForgotPasswordModal 
+                    isOpen={showForgotModal} 
+                    onClose={() => setShowForgotModal(false)} 
+                />
             </div>
         </div>
     );

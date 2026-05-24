@@ -4,10 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faBell, faShieldAlt, faSave, faUserCircle } from '@fortawesome/free-solid-svg-icons';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
 
 const Settings = () => {
     const { user, updateUser } = useAuth();
     const [activeTab, setActiveTab] = useState('profile');
+    const [showForgotModal, setShowForgotModal] = useState(false);
     
     // Profile form states
     const [username, setUsername] = useState(user?.username || '');
@@ -238,6 +240,19 @@ const Settings = () => {
 
                             <div className="pt-6 border-t border-slate-100 space-y-3">
                                 <div>
+                                    <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Forgot Password</h3>
+                                    <p className="text-[10px] text-slate-400 leading-normal mt-0.5">Request a password reset link to be sent to your email address.</p>
+                                </div>
+                                <button 
+                                    onClick={() => setShowForgotModal(true)}
+                                    className="bg-slate-50 border border-slate-150 hover:bg-slate-100 hover:border-slate-250 text-slate-600 px-4 py-2 rounded font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                                >
+                                    Request Reset Link
+                                </button>
+                            </div>
+
+                            <div className="pt-6 border-t border-slate-100 space-y-3">
+                                <div>
                                     <h3 className="text-xs font-bold text-rose-600 uppercase tracking-wider">Danger Zone</h3>
                                     <p className="text-[10px] text-slate-400 leading-normal mt-0.5">Once you delete your account, all credentials and learning indexes will be completely erased. There is no rollback.</p>
                                 </div>
@@ -249,6 +264,11 @@ const Settings = () => {
                     )}
                 </div>
             </div>
+
+            <ForgotPasswordModal 
+                isOpen={showForgotModal} 
+                onClose={() => setShowForgotModal(false)} 
+            />
         </Layout>
     );
 };
