@@ -1,0 +1,68 @@
+# eLMS API Documentation
+
+This document outlines the RESTful API endpoints available in the eLMS backend. 
+
+**Base URL**: `http://localhost:5000/api`
+
+## Authentication
+
+All protected endpoints require a Bearer token in the `Authorization` header:
+`Authorization: Bearer <token>`
+
+---
+
+### Auth Routes (`/auth`)
+
+| Method | Endpoint | Access | Description | Request Body |
+|--------|----------|--------|-------------|--------------|
+| `POST` | `/register` | Public | Register a new user | `{ username, email, password, role_name, mentor_id? }` |
+| `POST` | `/login` | Public | Authenticate a user | `{ email, password }` |
+| `POST` | `/forgot-password` | Public | Generate a password reset code | `{ email }` |
+| `POST` | `/reset-password` | Public | Reset password using generated code | `{ code, newPassword, confirmPassword }` |
+| `GET` | `/mentors` | Public | Get list of available mentors | - |
+
+---
+
+### User Management (`/users`)
+
+| Method | Endpoint | Access | Description | Request Body |
+|--------|----------|--------|-------------|--------------|
+| `GET` | `/` | Admin, Mentor | Get list of all users | - |
+| `PATCH` | `/:id/status` | Admin | Toggle user active/inactive status | `{ status }` |
+| `POST` | `/assign` | Admin, Mentor | Assign a module to a student | `{ student_id, module_id }` |
+| `POST` | `/impersonate/:id` | Admin | Generate token to impersonate a user | - |
+| `PUT` | `/profile` | Authenticated | Update current user's profile | `{ username, email }` |
+| `PUT` | `/password` | Authenticated | Update current user's password | `{ currentPassword, newPassword }` |
+
+---
+
+### Modules & Lessons (`/modules`)
+
+| Method | Endpoint | Access | Description | Request Body |
+|--------|----------|--------|-------------|--------------|
+| `GET` | `/` | Authenticated | Get list of modules (varies by role) | - |
+| `GET` | `/:id` | Authenticated | Get details of a specific module | - |
+| `POST` | `/` | Admin, Mentor | Create a new module | `{ title, description, mentor_id? }` |
+| `PATCH` | `/:id/status` | Admin | Toggle module active/inactive status | `{ status }` |
+| `GET` | `/:moduleId/lessons` | Authenticated | Get all lessons for a module | - |
+| `POST` | `/:moduleId/lessons` | Admin, Mentor | Add a new lesson to a module | `{ title, content, order_index }` |
+| `PUT` | `/lessons/:id` | Admin, Mentor | Update a specific lesson | `{ title, content, order_index }` |
+| `DELETE`| `/lessons/:id` | Admin, Mentor | Delete a specific lesson | - |
+
+---
+
+### Progress Tracking (`/progress`)
+
+| Method | Endpoint | Access | Description | Request Body |
+|--------|----------|--------|-------------|--------------|
+| `POST` | `/complete` | Student | Mark a specific lesson as complete | `{ lesson_id, module_id }` |
+| `GET` | `/:moduleId` | Authenticated | Get current user's progress for a module | - |
+| `GET` | `/:moduleId/all`| Admin, Mentor | Get all students' progress for a module | - |
+
+---
+
+### Analytics (`/analytics`)
+
+| Method | Endpoint | Access | Description | Request Body |
+|--------|----------|--------|-------------|--------------|
+| `GET` | `/` | Admin, Mentor | Get platform-wide analytics and statistics | - |

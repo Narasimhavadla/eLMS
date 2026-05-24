@@ -43,6 +43,12 @@ exports.register = async (req, res) => {
         res.status(201).json({ message: 'User registered successfully' });
     } catch (err) {
         console.error('Registration error:', err);
+        if (err.name === 'SequelizeUniqueConstraintError') {
+            const fields = err.errors.map(e => e.path).join(', ');
+            return res.status(400).json({ 
+                message: `The following fields are already in use: ${fields}` 
+            });
+        }
         res.status(500).json({ message: 'Error registering user', error: err.message });
     }
 };
