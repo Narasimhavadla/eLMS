@@ -8,7 +8,8 @@ exports.register = async (req, res) => {
     try {
         console.log('Registering user:', { username, email, role_name, mentor_id });
         
-        const role = await Role.findOne({ where: { name: role_name || 'student' } });
+        const normalizedRoleName = (role_name || 'student').toLowerCase();
+        const role = await Role.findOne({ where: { name: normalizedRoleName } });
         if (!role) {
             console.error('Role not found:', role_name);
             return res.status(400).json({ message: 'Invalid role' });
