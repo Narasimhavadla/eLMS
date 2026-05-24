@@ -40,48 +40,6 @@ const StudentDashboard = () => {
     const completedModules = modules.filter(m => m.percentage === 100).length;
     const inProgressModules = modules.filter(m => m.percentage > 0 && m.percentage < 100).length;
 
-    const platformOperations = [
-        {
-            id: 1,
-            title: 'Study Assistant',
-            description: 'AI-powered learning companion for your next study session.',
-            icon: faMicrochip,
-            color: 'from-blue-500 to-blue-600',
-            bgColor: 'bg-blue-50',
-            borderColor: 'border-blue-100',
-            action: 'Launch'
-        },
-        {
-            id: 2,
-            title: 'Quiz & Test',
-            description: 'Practice quizzes and assessments for your modules.',
-            icon: faQuestionCircle,
-            color: 'from-purple-500 to-purple-600',
-            bgColor: 'bg-purple-50',
-            borderColor: 'border-purple-100',
-            action: 'Launch'
-        },
-        {
-            id: 3,
-            title: 'Custom Learning',
-            description: 'Customize your learning path to fit any meeting.',
-            icon: faCog,
-            color: 'from-emerald-500 to-emerald-600',
-            bgColor: 'bg-emerald-50',
-            borderColor: 'border-emerald-100',
-            action: 'Launch'
-        },
-        {
-            id: 4,
-            title: 'Analytics',
-            description: 'Track your learning progress and performance.',
-            icon: faBarChart,
-            color: 'from-orange-500 to-orange-600',
-            bgColor: 'bg-orange-50',
-            borderColor: 'border-orange-100',
-            action: 'View'
-        }
-    ];
 
     return (
         <div className="space-y-8 pb-8">
@@ -121,41 +79,6 @@ const StudentDashboard = () => {
                 </div>
             </div>
 
-            {/* Platform Operations Cards */}
-            <div className="space-y-6">
-                <div className="flex items-center justify-between px-1">
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-900">Platform Operations</h2>
-                        <p className="text-slate-600 text-sm mt-1">Essential tools and features for your learning journey</p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                    {platformOperations.map((operation) => (
-                        <div
-                            key={operation.id}
-                            className={`group relative overflow-hidden rounded-2xl p-8 ${operation.bgColor} border-2 ${operation.borderColor} hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1`}
-                        >
-                            {/* Background gradient accent */}
-                            <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${operation.color} opacity-5 rounded-full -mr-16 -mt-16 group-hover:opacity-10 transition-opacity`}></div>
-
-                            <div className="relative z-10">
-                                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${operation.color} flex items-center justify-center text-white shadow-lg mb-6 group-hover:scale-110 transition-transform`}>
-                                    <FontAwesomeIcon icon={operation.icon} className="text-2xl" />
-                                </div>
-
-                                <h3 className="text-xl font-bold text-slate-900 mb-2">{operation.title}</h3>
-                                <p className="text-slate-600 text-sm mb-6 leading-relaxed">{operation.description}</p>
-
-                                <button className={`inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r ${operation.color} text-white font-semibold rounded-lg hover:shadow-lg transform transition-all active:scale-95 group-hover:pr-8`}>
-                                    {operation.action}
-                                    <FontAwesomeIcon icon={faChevronRight} className="text-sm opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
 
             {/* Learning Curriculum Section */}
             <div className="space-y-6">
@@ -230,32 +153,7 @@ const StudentDashboard = () => {
                 )}
             </div>
 
-            {/* Quick Stats Section */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl p-6 border border-emerald-200">
-                    <div className="w-12 h-12 bg-emerald-600 text-white rounded-xl flex items-center justify-center mb-4 shadow-lg">
-                        <FontAwesomeIcon icon={faTrophy} className="text-lg" />
-                    </div>
-                    <p className="text-emerald-600 text-sm font-semibold mb-1">Total Achievements</p>
-                    <p className="text-3xl font-bold text-emerald-900">{completedModules}</p>
-                </div>
 
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
-                    <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center mb-4 shadow-lg">
-                        <FontAwesomeIcon icon={faRocket} className="text-lg" />
-                    </div>
-                    <p className="text-blue-600 text-sm font-semibold mb-1">In Progress</p>
-                    <p className="text-3xl font-bold text-blue-900">{inProgressModules}</p>
-                </div>
-
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200">
-                    <div className="w-12 h-12 bg-purple-600 text-white rounded-xl flex items-center justify-center mb-4 shadow-lg">
-                        <FontAwesomeIcon icon={faAward} className="text-lg" />
-                    </div>
-                    <p className="text-purple-600 text-sm font-semibold mb-1">Learning Streak</p>
-                    <p className="text-3xl font-bold text-purple-900">12 Days</p>
-                </div>
-            </div>
         </div>
     );
 };
